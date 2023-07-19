@@ -69,3 +69,79 @@ The size of the Neural Network can be adjusted by updating the letter **m** in y
 n > s > m > l > x : n for nano (simplest model), x for xtra model (most complicated model)
 
 The ==yolov8/runs== folder contains the results.
+
+
+
+### 3. Metrics : mAP50
+
+https://medium.com/axinc-ai/map-evaluation-metric-of-object-detection-model-dd20e2dc2472
+
+##### About IOU
+
+##### Object detection models predict the bounding box and category of objects in an image. *Intersection Over Union (IOU)* is used to determine if the bounding box was correctly predicted.
+
+The IOU indicates how much bounding boxes overlap. This ratio of overlap between the regions of two bounding boxes becomes 1.0 in the case of an exact match and 0.0 if there is no overlap.
+
+![img](/Users/user/code/flegoualher/maia/yolo-mycomputer-test-20230713/1*fYdiMfuzhqJ5OtSKmo_xtQ-20230713213005507.png)
+
+Source: https://github.com/rafaelpadilla/Object-Detection-Metrics
+
+In the evaluation of object detection models, it is necessary to define how much overlap of bounding boxes with respect to the ground truth data should be considered as successful recognition. For this purpose, IOUs are used, and *mAP50* is the accuracy when IOU=50, i.e., if there is more than 50% overlap, the detection is considered successful. The larger the IOU, the more accurate the bounding box needs to be detected and the more difficult it becomes. For example, the value of *mAP75* is lower than the value of *mAP50*.
+
+# About Precision and Recall
+
+*Precision* is the ability of a model to identify only the relevant objects. It answers the question *What proportion of positive identifications was actually correct*? A model that produces no false positives has a precision of 1.0. However, the value will be 1.0 even if there are undetected or not detected bounding boxes that should be detected.
+
+![img](/Users/user/code/flegoualher/maia/yolo-mycomputer-test-20230713/1*uZk9UCjL6JWYXWmpZ23Log.gif)
+
+Source: https://github.com/rafaelpadilla/Object-Detection-Metrics
+
+*Recall* is the ability of a model to find all ground truth bounding boxes. It answers the question *What proportion of actual positives was identified correctly?* A model that produces no false negatives (i.e. there are no undetected bounding boxes that should be detected) has a recall of 1.0. However, even if there is an “overdetection” and wrong bounding box are detected, the recall will still be 1.0.
+
+![img](/Users/user/code/flegoualher/maia/yolo-mycomputer-test-20230713/1*CQSLw7zTiDyjleV3J5vkSA.gif)
+
+Source: https://github.com/rafaelpadilla/Object-Detection-Metrics
+
+# About Precision Recall Curve
+
+The *Precision Recall Curve* is a plot of *Precision* on the vertical axis and *Recall* on the horizontal axis.
+
+![img](/Users/user/code/flegoualher/maia/yolo-mycomputer-test-20230713/1*hKq9q4TJ7BSDxg6TrGHTRA.png)
+
+Source: https://github.com/rafaelpadilla/Object-Detection-Metrics
+
+There is a threshold for object detection. Increasing the threshold reduces the of risk of over-detecting objects, but increases the risk of missed detections. For example, if threshold=1.0, no object will be detected, *Precision* will be 1.0, and *Recall* will be 0.0. On the other hand, if threshold=0.0, an infinite number of objects will be detected, Precision will be 0.0, and Recall will be 1.0. Conversely, if threshold=0.0, an infinite number of objects will be detected, *Precision* will be 0.0, and *Recall* will be 1.0.
+
+In the case of a good machine learning model, over-detection will not occur even if threshold is reduced (*Recall* is increased), and *Precision* will remain high. Therefore, the higher up the curve to the right in the graph, the better the machine learning model is.
+
+# About AP
+
+When comparing the performance of two machine learning models, the higher the *Precision Recall Curve*, the better the performance. It is time-consuming to actually plot this curve, and as the *Precision Recall Curve* is often zigzagging, it is subjective judgment whether the model is good or not.
+
+A more intuitive way to evaluate models is the *AP (Average Precision)*, which represents the area under the curve (AUC) *Precision Recall Curve*. The higher the curve is in the upper right corner, the larger the area, so the higher the *AP*, and the better the machine learning model.
+
+![img](/Users/user/code/flegoualher/maia/yolo-mycomputer-test-20230713/1*uNRonqOivovAPwspbAp0sQ.png)
+
+Source: https://github.com/rafaelpadilla/Object-Detection-Metrics
+
+# About mAP
+
+The *mAP* is an average of the *AP* values, which is a further average of the *AP*s for all classes.
+
+# Maximizing mAP
+
+The *mAP* is calculated by fixing the *confidence threshold*. *COCO2017 TestSet* can be used to measure *mAP* on various *confidence thresholds* to check the effect of this threshold.
+
+As a result, we confirmed that the smaller the *confidence threshold* is, the higher the *mAP* becomes.
+
+![img](/Users/user/code/flegoualher/maia/yolo-mycomputer-test-20230713/1*OmqjV2xVCoKKsOYZW8j4Kg.png)
+
+mAP50 for various thresholds measured on yolov4-tiny and yolov3-tiny
+
+![img](/Users/user/code/flegoualher/maia/yolo-mycomputer-test-20230713/1*cDUWhnHw6sKjeq943xhkzw.png)
+
+mAP75 for various thresholds measured on yolov4-tiny and yolov3-tiny
+
+This result suggests that the more over-detection occurs, the higher the *mAP. A* higher *Recall* will result in a larger area than a higher *Precision*, and we believe this is due to the small number images (40 670) in *COCO2017 TestSet*.
+
+In the script `test.py` of the yolov5 repository, the *confidence threshold* for *mAP* calculation has an extremely small value of 0.001.
