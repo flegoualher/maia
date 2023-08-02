@@ -259,3 +259,32 @@ def read_and_extract_coordinates(filename):
                 latitudes.append(latitude)
                 longitudes.append(longitude)
     return latitudes, longitudes
+
+#create a df with structure type, lat, lon
+def extract_data_from_file(file_path):
+    data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if line:
+                parts = line.split()
+                category = int(parts[0])
+                if len(parts) >= 3:
+                    coordinates = [float(parts[i]) for i in range(1, 3)]
+                else:
+                    coordinates = [float(parts[i]) for i in range(1, len(parts))]
+                    while len(coordinates) < 2:
+                        coordinates.append(None)
+                data.append((category, *coordinates))
+    return data
+
+# Function to map category values to structure names
+def map_category_to_structure(category):
+    if category == 0:
+        return 'aguada'
+    elif category == 1:
+        return 'building'
+    elif category == 2:
+        return 'platform'
+    else:
+        return 'unknown'

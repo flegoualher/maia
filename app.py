@@ -37,7 +37,7 @@ import streamlit as st
 import settings
 import helper
 from helper import create_tile_tiff, read_contour_data, get_latest_created_folder, utm_to_latlon, read_coordinates_from_file
-
+from helper import extract_data_from_file, map_category_to_structure
 # Setting page layout
 st.set_page_config(
     page_title="MAIA - YOLOv8",
@@ -118,6 +118,7 @@ try:
         st.image(image, width = 775)
 
     else:
+        st.title("Let's go find some ancient settlements !")
         st.write("Point cloud file uploaded !")
         point_cloud = laspy.read(point_cloud_upload)
         #store coordinates in "points", and colors in "colors" variable
@@ -166,10 +167,11 @@ col1, col2 = st.columns(2)
 with col1:
     try:
         if source_img is None:
-            default_image_path = str(settings.DEFAULT_DETECT_IMAGE)
-            default_image = PIL.Image.open(default_image_path)
-            st.image(default_image_path, caption="Lidar Image Default",
-                     use_column_width=True)
+            st.write(" ")
+            # default_image_path = str(settings.DEFAULT_DETECT_IMAGE)
+            # default_image = PIL.Image.open(default_image_path)
+            # st.image(default_image_path, caption="Lidar Image Default",
+            #          use_column_width=True)
         else:
             #uploaded_image = PIL.Image.open(source_img)
             st.image(source_img, caption="Lidar Point Cloud Image",
@@ -183,11 +185,12 @@ with col1:
 #############################
 with col2:
     if source_img is None:
-        default_detected_image_path = str(settings.DEFAULT_DETECT_IMAGE_2)
-        default_detected_image = PIL.Image.open(
-            default_detected_image_path)
-        st.image(default_detected_image_path, caption='Detected Image',
-                 use_column_width=True)
+        st.write(" ")
+        # default_detected_image_path = str(settings.DEFAULT_DETECT_IMAGE_2)
+        # default_detected_image = PIL.Image.open(
+        #     default_detected_image_path)
+        # st.image(default_detected_image_path, caption='Detected Image',
+        #          use_column_width=True)
     else:
         res = model.predict(source_img,conf=confidence, save_txt = True)
         boxes = res[0].boxes
@@ -205,10 +208,10 @@ label_path = 'runs/segment/' + latest_folder + '/labels/rgb_tile_georef.txt'
 # Load the georeferenced TIFF file
 tif_file_path = "images/rgb_tile_georef.tiff"
 with rasterio.open(tif_file_path) as src:
-    print(src.crs)
+    #print(src.crs)
     # Get the geotransform (affine transformation) of the raster
     geotransform = src.transform
-    print(geotransform)
+    #print(geotransform)
     # Loop through each contour in the text file
     with open(label_path, "r") as file:
         # Open a new text file for writing the converted data
@@ -217,12 +220,12 @@ with rasterio.open(tif_file_path) as src:
                 # Split the line into individual contour coordinates
                 data = line.strip().split(",")
                 data = data[0].split()
-                print(data)
+                #print(data)
                 #category
                 category = data[0]
                 # Skip the first value (category) and convert the rest to float
                 contour_coordinates = [float(coord) for coord in data[1:]]
-                print(contour_coordinates)
+                #print(contour_coordinates)
                 # List to store the converted longitude and latitude values
                 converted_coordinates = []
                 #converted_coordinates.append(str(category))
@@ -260,8 +263,29 @@ longitude = longitudes[0]
 #st.write(latitude)
 #st.write(longitude)
 
-#Map
-m = folium.Map(location=[latitude, longitude], zoom_start=5, width = 775)
+
+#create df with all detected structures
+result = extract_data_from_file(file_path)
+# Create a pandas DataFrame from the extracted data
+df = pd.DataFrame(result, columns=['category', 'latitude', 'longitude'])
+# Apply the function to create the 'structure' column
+df['structure'] = df['category'].apply(map_category_to_structure)
+aguada_number = len(df[df['category'] == 0])
+building_number = len(df[df['category'] == 1])
+platform_number = len(df[df['category'] == 2])
+total_number = aguada_number + building_number + platform_number
+map_center = [df['latitude'].iloc[0], df['longitude'].iloc[0]]
+
+##############################################
+# Map
+##############################################
+
+# Function to add markers to the map
+def add_marker(row):
+    lat, lon, structure = row['latitude'], row['longitude'], row['structure']
+    folium.Marker([lat, lon], popup=structure).add_to(m)
+
+m = folium.Map(location=map_center, zoom_start=5)
 esri_satellite = folium.TileLayer(
             tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             attr = 'Esri',
@@ -269,15 +293,8 @@ esri_satellite = folium.TileLayer(
             overlay = True,
             control = True)
 
-# Add line shape
-filename = 'images/rgb_tile_georef_geoconverted.txt'
-lat_lng_points = read_contour_data(filename)
-folium.PolyLine(lat_lng_points,
-                        color='blue',
-                        tooltip="PolyLine",
-                        weight=5,  # line thickness
-                        opacity=0.8  # transparency
-                        ).add_to(m)
+# Apply the add_marker function to each row in the DataFrame
+df.apply(add_marker, axis=1)
 
 
 
@@ -297,3 +314,7 @@ for i in range(1,37+1):
 esri_satellite.add_to(m)
 folium.Marker([latitude, longitude]).add_to(m)
 folium_static(m)
+
+st.write(f"Structures detected : {total_number}")
+st.write(f"Aguadas : {aguada_number} - Buildings : {building_number} - Platforms : {platform_number}")
+st.dataframe(df)
