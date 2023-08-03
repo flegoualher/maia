@@ -15,6 +15,7 @@ geopandas
 pyproj
 folium
 scikit-learn
+rvt-py
 
 # Streamlit and Streamlit-related packages
 streamlit
