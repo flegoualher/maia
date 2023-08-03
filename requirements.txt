@@ -1,17 +1,21 @@
 # Python In-built packages
-Pillow==8.3.2
-laspy==2.0.3
-numpy==1.21.1
-pandas==1.3.1
-plotly==5.3.1
-opencv-python==4.5.3.56
-matplotlib==3.4.3
-rasterio==1.2.9
-geopandas==0.10.2
-pyproj==3.1.0
-folium==0.12.1
-scikit-learn==0.24.2
+pip>=9
+setuptools>=26
+twine
+wheel>=0.29
+Pillow
+laspy
+numpy
+pandas
+plotly
+opencv-python
+matplotlib
+rasterio
+geopandas
+pyproj
+folium
+scikit-learn
 
 # Streamlit and Streamlit-related packages
-streamlit==0.89.0
-streamlit-folium==0.6.1
+streamlit
+streamlit-folium
