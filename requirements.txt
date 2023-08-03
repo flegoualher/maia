@@ -15,7 +15,6 @@ streamlit
 requests
 python-dotenv
 path
-PIL
 laspy
 settings
 numpy
