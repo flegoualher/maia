@@ -1,5 +1,5 @@
 # Python In-built packages
-pip>=9
+pip>=23
 setuptools>=26
 twine
 wheel>=0.29
