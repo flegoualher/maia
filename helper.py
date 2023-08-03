@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import streamlit as st
 import cv2
 #import pafy
-
+import folium
 import settings
 import numpy as np
 import pandas as pd
@@ -288,3 +288,17 @@ def map_category_to_structure(category):
         return 'platform'
     else:
         return 'unknown'
+
+
+def read_and_extract_coordinates(filename):
+    latitudes = []
+    longitudes = []
+    with open(filename, 'r') as file:
+        for line in file:
+            parts = line.strip().split()
+            if len(parts) >= 3:
+                latitude = float(parts[1])
+                longitude = float(parts[2])
+                latitudes.append(latitude)
+                longitudes.append(longitude)
+    return latitudes, longitudes

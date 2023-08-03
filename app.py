@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import laspy
 import plotly.express as px
-import laspy
 import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -36,8 +35,13 @@ import streamlit as st
 # Local Modules
 import settings
 import helper
+
+
+#Import functions from helper.py
 from helper import create_tile_tiff, read_contour_data, get_latest_created_folder, utm_to_latlon, read_coordinates_from_file
-from helper import extract_data_from_file, map_category_to_structure
+from helper import extract_data_from_file, map_category_to_structure, read_and_extract_coordinates
+
+
 # Setting page layout
 st.set_page_config(
     page_title="MAIA - YOLOv8",
@@ -54,14 +58,14 @@ utm_zone = 15
 northern_hemisphere = True
 
 # Sidebar
-st.sidebar.header("ML Model Config")
+st.sidebar.image("images/31161816_transparent.png")
+
 
 # Model Options
 model_type = 'Segmentation'
 model_path = Path(settings.SEGMENTATION_MODEL)
 
-confidence = float(st.sidebar.slider(
-    "Select Model Confidence", 25, 100, 40)) / 100
+
 
 #dictionnaries for point cloud visualization
 category_name_dict = {'1' : 'unclassified',
@@ -107,6 +111,9 @@ point_cloud_upload = None
 point_cloud_upload = st.sidebar.file_uploader(
     "Upload point cloud data here...", type=(".las", ".laz"))# , accept_multiple_files=True)
 
+st.sidebar.header("ML Model Config")
+confidence = float(st.sidebar.slider(
+    "Select Model Confidence", 25, 100, 40)) / 100
 ################################################################################
 #POINT CLOUD IMAGE
 ################################################################################
@@ -205,6 +212,10 @@ directory_path = 'runs/segment'
 latest_folder = get_latest_created_folder(directory_path)
 label_path = 'runs/segment/' + latest_folder + '/labels/rgb_tile_georef.txt'
 
+def add_marker(row):
+    lat, lon, structure = row['latitude'], row['longitude'], row['structure']
+    folium.Marker([lat, lon], popup=structure).add_to(m)
+
 # Load the georeferenced TIFF file
 tif_file_path = "images/rgb_tile_georef.tiff"
 with rasterio.open(tif_file_path) as src:
@@ -213,108 +224,91 @@ with rasterio.open(tif_file_path) as src:
     geotransform = src.transform
     #print(geotransform)
     # Loop through each contour in the text file
-    with open(label_path, "r") as file:
-        # Open a new text file for writing the converted data
-        with open("images/rgb_tile_georef_geoconverted.txt", "w") as output_file:
-            for line in file:
-                # Split the line into individual contour coordinates
-                data = line.strip().split(",")
-                data = data[0].split()
-                #print(data)
-                #category
-                category = data[0]
-                # Skip the first value (category) and convert the rest to float
-                contour_coordinates = [float(coord) for coord in data[1:]]
-                #print(contour_coordinates)
-                # List to store the converted longitude and latitude values
-                converted_coordinates = []
-                #converted_coordinates.append(str(category))
-                # Iterate through the pairs of x, y coordinates (assumes x, y pairs)
-                for i in range(0, len(contour_coordinates), 2):
-                    x, y = contour_coordinates[i-1], contour_coordinates[i]
-                    # Transform pixel coordinates (x, y) to geographic coordinates (longitude, latitude)
-                    X, Y = rasterio.transform.xy(geotransform, x, y)
-                    lon, lat = utm_to_latlon(X, Y)
-                    # convert lat and lon
-                    # Append the converted longitude and latitude to the list
-                    converted_coordinates.append(str(lon))
-                    converted_coordinates.append(str(lat))
-               # Write the converted data to the output file
-                output_file.write(category + " " + " ".join(converted_coordinates) + "\n")
-
-def read_and_extract_coordinates(filename):
-    latitudes = []
-    longitudes = []
-    with open(filename, 'r') as file:
-        for line in file:
-            parts = line.strip().split()
-            if len(parts) >= 3:
-                latitude = float(parts[1])
-                longitude = float(parts[2])
-                latitudes.append(latitude)
-                longitudes.append(longitude)
-    return latitudes, longitudes
-
-# Replace 'your_file.txt' with the actual path to your file containing the numbers
-file_path = 'images/rgb_tile_georef_geoconverted.txt'
-latitudes, longitudes = read_and_extract_coordinates(file_path)
-latitude = latitudes[0]
-longitude = longitudes[0]
-#st.write(latitude)
-#st.write(longitude)
+    try:
+        with open(label_path, "r") as file:
+            # Open a new text file for writing the converted data
+            with open("images/rgb_tile_georef_geoconverted.txt", "w") as output_file:
+                for line in file:
+                    # Split the line into individual contour coordinates
+                    data = line.strip().split(",")
+                    data = data[0].split()
+                    #print(data)
+                    #category
+                    category = data[0]
+                    # Skip the first value (category) and convert the rest to float
+                    contour_coordinates = [float(coord) for coord in data[1:]]
+                    #print(contour_coordinates)
+                    # List to store the converted longitude and latitude values
+                    converted_coordinates = []
+                    #converted_coordinates.append(str(category))
+                    # Iterate through the pairs of x, y coordinates (assumes x, y pairs)
+                    for i in range(0, len(contour_coordinates), 2):
+                        x, y = contour_coordinates[i-1], contour_coordinates[i]
+                        # Transform pixel coordinates (x, y) to geographic coordinates (longitude, latitude)
+                        X, Y = rasterio.transform.xy(geotransform, x, y)
+                        lon, lat = utm_to_latlon(X, Y)
+                        # convert lat and lon
+                        # Append the converted longitude and latitude to the list
+                        converted_coordinates.append(str(lon))
+                        converted_coordinates.append(str(lat))
+                # Write the converted data to the output file
+                    output_file.write(category + " " + " ".join(converted_coordinates) + "\n")
+        # Replace 'your_file.txt' with the actual path to your file containing the numbers
+        file_path = 'images/rgb_tile_georef_geoconverted.txt'
+        latitudes, longitudes = read_and_extract_coordinates(file_path)
+        latitude = latitudes[0]
+        longitude = longitudes[0]
+        #st.write(latitude)
+        #st.write(longitude)
 
 
-#create df with all detected structures
-result = extract_data_from_file(file_path)
-# Create a pandas DataFrame from the extracted data
-df = pd.DataFrame(result, columns=['category', 'latitude', 'longitude'])
-# Apply the function to create the 'structure' column
-df['structure'] = df['category'].apply(map_category_to_structure)
-aguada_number = len(df[df['category'] == 0])
-building_number = len(df[df['category'] == 1])
-platform_number = len(df[df['category'] == 2])
-total_number = aguada_number + building_number + platform_number
-map_center = [df['latitude'].iloc[0], df['longitude'].iloc[0]]
+        #create df with all detected structures
+        result = extract_data_from_file(file_path)
+        # Create a pandas DataFrame from the extracted data
+        df = pd.DataFrame(result, columns=['category', 'latitude', 'longitude'])
+        # Apply the function to create the 'structure' column
+        df['structure'] = df['category'].apply(map_category_to_structure)
+        aguada_number = len(df[df['category'] == 0])
+        building_number = len(df[df['category'] == 1])
+        platform_number = len(df[df['category'] == 2])
+        total_number = aguada_number + building_number + platform_number
+        map_center = [df['latitude'].iloc[0], df['longitude'].iloc[0]]
 
-##############################################
-# Map
-##############################################
+        ##############################################
+        # Map
+        ##############################################
 
-# Function to add markers to the map
-def add_marker(row):
-    lat, lon, structure = row['latitude'], row['longitude'], row['structure']
-    folium.Marker([lat, lon], popup=structure).add_to(m)
+        m = folium.Map(location=map_center, zoom_start=5)
+        esri_satellite = folium.TileLayer(
+                    tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                    attr = 'Esri',
+                    name = 'Esri Satellite',
+                    overlay = True,
+                    control = True)
 
-m = folium.Map(location=map_center, zoom_start=5)
-esri_satellite = folium.TileLayer(
-            tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            attr = 'Esri',
-            name = 'Esri Satellite',
-            overlay = True,
-            control = True)
+        # Apply the add_marker function to each row in the DataFrame
+        df.apply(add_marker, axis=1)
 
-# Apply the add_marker function to each row in the DataFrame
-df.apply(add_marker, axis=1)
+        # Inomata contour
+        for i in range(1,37+1):
+            inomata_contour = read_coordinates_from_file(f'images/inomata_contour/inomata_{i}.txt')
+            folium.PolyLine(inomata_contour,
+                                    color='red',
+                                    tooltip="Inomata",
+                                    weight=3,  # line thickness
+                                    opacity=0.8  # transparency
+                                    ).add_to(m)
 
 
 
+        esri_satellite.add_to(m)
+        folium.Marker([latitude, longitude]).add_to(m)
+        folium_static(m)
 
-# Inomata contour
-for i in range(1,37+1):
-    inomata_contour = read_coordinates_from_file(f'images/inomata_contour/inomata_{i}.txt')
-    folium.PolyLine(inomata_contour,
-                            color='red',
-                            tooltip="Inomata",
-                            weight=3,  # line thickness
-                            opacity=0.8  # transparency
-                            ).add_to(m)
+        st.write(f"Structures detected : {total_number}")
+        st.write(f"Aguadas : {aguada_number} - Buildings : {building_number} - Platforms : {platform_number}")
+        st.dataframe(df)
 
-
-
-esri_satellite.add_to(m)
-folium.Marker([latitude, longitude]).add_to(m)
-folium_static(m)
-
-st.write(f"Structures detected : {total_number}")
-st.write(f"Aguadas : {aguada_number} - Buildings : {building_number} - Platforms : {platform_number}")
-st.dataframe(df)
+    except FileNotFoundError:
+    # Custom error message for the FileNotFoundError
+        st.write(" ")
