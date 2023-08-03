@@ -16,6 +16,7 @@ pyproj
 folium
 scikit-learn
 rvt-py
+brew
 GDAL
 
 # Streamlit and Streamlit-related packages
