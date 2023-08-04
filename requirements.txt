@@ -20,4 +20,5 @@ rvt-py
 # Streamlit and Streamlit-related packages
 streamlit
 streamlit-folium
+
 GDAL==3.2.2.1
