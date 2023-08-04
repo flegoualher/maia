@@ -22,8 +22,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
 import streamlit as st
 from streamlit_folium import folium_static
-import rasterio
-from rasterio.transform import from_origin
 import csv
 import pyproj
 

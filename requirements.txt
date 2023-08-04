@@ -4,7 +4,7 @@ setuptools>=26
 twine
 wheel>=0.29
 Pillow
-laspy
+laspy[lazrs,laszip]
 numpy
 pandas
 plotly
