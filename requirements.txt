@@ -8,7 +8,7 @@ laspy
 numpy
 pandas
 plotly
-opencv-python-headless
+opencv-python
 matplotlib
 rasterio
 geopandas
