@@ -16,6 +16,9 @@ pyproj
 folium
 scikit-learn
 rvt-py
+os
+ultralytics
+
 
 # Streamlit and Streamlit-related packages
 streamlit
