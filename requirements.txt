@@ -16,7 +16,6 @@ pyproj
 folium
 scikit-learn
 rvt-py
-os
 ultralytics
 
 
