@@ -20,3 +20,4 @@ rvt-py
 # Streamlit and Streamlit-related packages
 streamlit
 streamlit-folium
+GDAL
