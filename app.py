@@ -118,7 +118,10 @@ confidence = float(st.sidebar.slider(
 try:
     if point_cloud_upload is None:
         st.title("Nothing uploaded... yet ! ")
-        st.write('''Let's have a look to the "Aguada Fénix" Mayan City, Mexico''')
+        st.write("To perform structure detection")
+        st.write('- drag and drop your Lidar file')
+        st.write("- let the magic happen !")
+        st.write('''In the meantime, enjoy the view of the "Aguada Fénix" Mayan City, Mexico''')
         image = PIL.Image.open(settings.DEFAULT_POINT_CLOUD)
         st.image(image, width = 775)
 
@@ -303,7 +306,7 @@ with rasterio.open(tif_file_path) as src:
         folium.Marker([latitude, longitude]).add_to(m)
         folium_static(m)
 
-        st.write(f"Structures detected : {total_number}")
+        st.write(f"Congratulations ! {total_number} structures detected !")
         st.write(f"Aguadas : {aguada_number} - Buildings : {building_number} - Platforms : {platform_number}")
         st.dataframe(df)
 
